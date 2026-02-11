@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "LaunchDarkly Approval Diff",
+  "version": "0.1.0",
+  "description": "Visual diff viewer for LaunchDarkly approval changes",
+  "host_permissions": [
+    "https://app.launchdarkly.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.launchdarkly.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

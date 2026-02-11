@@ -1,0 +1,20 @@
+{
+  "name": "launch-darkly-approval-diff",
+  "version": "0.1.0",
+  "description": "Visual diff viewer for LaunchDarkly approval changes",
+  "scripts": {
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^13.0.1",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.7.0",
+    "webpack": "^5.105.1",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "jsondiffpatch": "^0.7.3"
+  }
+}
