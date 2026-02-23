@@ -61,3 +61,21 @@ export function findCommonParent(fromSpan: Element, toSpan: Element): HTMLElemen
 
   return null;
 }
+
+export function findModeButtonGroup(fromSpan: Element, toSpan: Element): HTMLElement | null {
+  let parent = fromSpan.parentElement;
+
+  while (parent && parent !== document.body) {
+    if (parent.contains(toSpan)) {
+      const group = parent.querySelector('[data-test-id="schema-editor-mode-button-group"]');
+
+      if (group instanceof HTMLElement) {
+        return group;
+      }
+    }
+
+    parent = parent.parentElement;
+  }
+
+  return null;
+}

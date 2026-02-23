@@ -1,9 +1,8 @@
 import { create } from 'jsondiffpatch';
-import type { JsonValue } from './types';
-import { sortKeys, parseJson } from './json';
-import { findLabelSpans, extractJsonFromLabel, findCommonParent } from './dom';
-import { renderJsonDiff } from './renderer';
+import { findLabelSpans, extractJsonFromLabel, findCommonParent, findModeButtonGroup } from './dom';
 import { createDiffWidget } from './ui';
+import { buildDiffHtml } from './diffHtml';
+import { createExtensionModeManager } from './extensionMode';
 
 (function () {
   if (!window.location.pathname.match(/\/projects\/[^/]+\/approvals\//)) {
@@ -15,11 +14,9 @@ import { createDiffWidget } from './ui';
   const diffpatch = create({
     objectHash: (obj: unknown) => JSON.stringify(obj),
   });
+  const extensionModeManager = createExtensionModeManager();
 
   function processPair(fromSpan: Element, toSpan: Element) {
-    fromSpan.setAttribute('data-ld-diffed', 'true');
-    toSpan.setAttribute('data-ld-diffed', 'true');
-
     const fromJsonStr = extractJsonFromLabel(fromSpan);
     const toJsonStr = extractJsonFromLabel(toSpan);
 
@@ -28,18 +25,12 @@ import { createDiffWidget } from './ui';
       return;
     }
 
-    let fromObj = parseJson(fromJsonStr);
-    let toObj = parseJson(toJsonStr);
+    const diffHtml = buildDiffHtml(diffpatch, fromJsonStr, toJsonStr);
 
-    if (fromObj === null || toObj === null) {
+    if (diffHtml === null) {
       console.warn('[LD Diff] Could not parse JSON from from/to pair');
       return;
     }
-
-    fromObj = sortKeys(fromObj);
-    toObj = sortKeys(toObj);
-
-    const delta = diffpatch.diff(fromObj, toObj);
 
     const commonParent = findCommonParent(fromSpan, toSpan);
 
@@ -48,7 +39,28 @@ import { createDiffWidget } from './ui';
       return;
     }
 
-    const diffHtml = delta !== undefined ? renderJsonDiff(fromObj, toObj, delta) : undefined;
+    const modeButtonGroup = findModeButtonGroup(fromSpan, toSpan);
+
+    if (modeButtonGroup && extensionModeManager.mount(commonParent, modeButtonGroup, diffHtml)) {
+      markProcessed(fromSpan, toSpan, commonParent);
+
+      console.log('[LD Diff] Extension mode rendered successfully');
+      return;
+    }
+
+    renderFallbackDiff(commonParent, diffHtml);
+    markProcessed(fromSpan, toSpan, commonParent);
+
+    console.log('[LD Diff] Diff rendered successfully');
+  }
+
+  function markProcessed(fromSpan: Element, toSpan: Element, commonParent: HTMLElement) {
+    fromSpan.setAttribute('data-ld-diffed', 'true');
+    toSpan.setAttribute('data-ld-diffed', 'true');
+    commonParent.setAttribute('data-ld-diffed', 'true');
+  }
+
+  function renderFallbackDiff(commonParent: HTMLElement, diffHtml: string | undefined) {
     const originalContent = commonParent.cloneNode(true);
     const wrapper = createDiffWidget(diffHtml, originalContent);
 
@@ -56,9 +68,6 @@ import { createDiffWidget } from './ui';
     commonParent.style.display = 'block';
     commonParent.style.width = '100%';
     commonParent.appendChild(wrapper);
-    commonParent.setAttribute('data-ld-diffed', 'true');
-
-    console.log('[LD Diff] Diff rendered successfully');
   }
 
   function processAllPairs() {
